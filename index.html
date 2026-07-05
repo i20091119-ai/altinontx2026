@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스스로 달리는 배송차 — 주행 코드 복구</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 밝고 희망찬 파스텔 팔레트 (수학문화관 로고 색에서 뽑음) */
+    --bg1:#fff7ef; --bg2:#eaf6ff; --bg3:#fdeef7;
+    --panel:#ffffff; --panel2:#fff5ec; --line:#ffe0cf;
+    --ink:#3a3550; --dim:#8a86a0;
+    --red:#ef5b52; --orange:#ff9f1c; --yellow:#ffcb3d;
+    --green:#37c26f; --blue:#4aa3f0; --purple:#a65bd4;
+    --sun:#ff9f1c; --sun2:#ff7a3d;
+    --ok:#2bb673; --bad:#ff6b6b; --accent:#4aa3f0;
+    --r:22px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    font-family:'Jua','Gaegu','Pretendard','Apple SD Gothic Neo',system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 85% -8%, rgba(255,203,61,.35), transparent 60%),
+      radial-gradient(1000px 600px at 5% 8%, rgba(74,163,240,.28), transparent 55%),
+      radial-gradient(900px 700px at 50% 115%, rgba(166,91,212,.20), transparent 60%),
+      linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
+    background-attachment:fixed;
+    color:var(--ink); min-height:100vh; line-height:1.65;
+  }
+  .wrap{max-width:840px; margin:0 auto; padding:18px 16px 70px;}
+
+  /* ===== 헤더 · 수학문화관 로고 ===== */
+  .brandbar{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background:rgba(255,255,255,.75); border:2px solid #fff;
+    box-shadow:0 8px 24px rgba(120,120,180,.14);
+    border-radius:20px; padding:12px 16px; margin:6px 0 16px;
+    backdrop-filter:blur(4px);
+  }
+  .brandbar svg{height:44px; width:auto; display:block;}
+
+  .top{
+    display:flex; align-items:center; gap:14px; padding:6px 6px 20px;
+  }
+  .sun{
+    width:56px; height:56px; border-radius:50%; flex:none; position:relative;
+    background:radial-gradient(circle at 35% 32%, #fff2c4, var(--yellow) 55%, var(--sun2));
+    box-shadow:0 0 0 6px rgba(255,203,61,.22), 0 8px 26px rgba(255,138,61,.4);
+    animation:bob 3s ease-in-out infinite;
+  }
+  .sun::after{content:"☀️"; position:absolute; inset:0; display:grid; place-items:center; font-size:1.7rem;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-5px) rotate(8deg)}}
+  .top h1{font-size:1.5rem; margin:0; letter-spacing:-.01em; color:var(--ink);}
+  .top p{margin:3px 0 0; font-size:.9rem; color:var(--dim);}
+
+  /* ===== 안내 배너 ===== */
+  .alert{
+    display:flex; gap:12px; align-items:flex-start;
+    background:linear-gradient(180deg,#fff4dd,#ffe9c9);
+    border:2px solid #ffd587; border-radius:var(--r);
+    padding:16px 18px; margin-bottom:20px; font-size:.96rem;
+    box-shadow:0 8px 22px rgba(255,180,80,.18);
+  }
+  .alert b{color:var(--sun2);}
+  .alert .ic{font-size:1.9rem; line-height:1.2; filter:drop-shadow(0 2px 3px rgba(255,150,60,.3));}
+
+  /* ===== 스텝 ===== */
+  .steps{display:flex; gap:8px; margin-bottom:20px;}
+  .steps div{
+    flex:1; text-align:center; font-size:.82rem; color:var(--dim);
+    padding:11px 4px 9px; border-radius:16px; background:var(--panel);
+    border:2px solid #f0eefb; transition:.25s; line-height:1.25;
+  }
+  .steps div .n{display:block; font-size:1.25rem; margin-bottom:1px;}
+  .steps div.on{background:linear-gradient(180deg,#fff,#eef6ff); color:var(--ink); border-color:var(--blue); transform:translateY(-2px); box-shadow:0 8px 18px rgba(74,163,240,.22);}
+  .steps div.done{color:var(--ok); border-color:#9fe6c2; background:#f0fdf6;}
+
+  /* ===== 카드 ===== */
+  .card{
+    background:var(--panel); border:2px solid #fff;
+    border-radius:26px; padding:24px; margin-bottom:18px;
+    box-shadow:0 14px 34px rgba(120,120,180,.13);
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:.82rem; letter-spacing:.02em; color:#fff; font-weight:700;
+    background:linear-gradient(90deg,var(--orange),var(--sun2));
+    padding:5px 12px; border-radius:999px; margin-bottom:12px;
+    box-shadow:0 4px 12px rgba(255,140,60,.3);
+  }
+  .card h2{margin:0 0 6px; font-size:1.42rem; letter-spacing:-.01em; color:var(--ink);}
+  .card .lead{color:var(--dim); font-size:.96rem; margin:0 0 18px;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:9px;
+    background:linear-gradient(180deg,var(--orange),var(--sun2));
+    color:#fff; border:none; border-radius:16px;
+    font-family:inherit; font-size:1.12rem; font-weight:700; padding:15px 22px; cursor:pointer;
+    width:100%; transition:.15s; box-shadow:0 8px 20px rgba(255,140,60,.35);
+  }
+  .btn:hover{filter:brightness(1.05);}
+  .btn:active{transform:translateY(2px); box-shadow:0 4px 12px rgba(255,140,60,.3);}
+  .btn.ghost{background:#fff; color:var(--ink); border:2px solid var(--line); box-shadow:none;}
+  .btn.small{width:auto; flex:none; white-space:nowrap; padding:12px 18px; font-size:1rem;}
+  .btn.blue{background:linear-gradient(180deg,#6cb8f7,var(--blue)); box-shadow:0 8px 20px rgba(74,163,240,.35);}
+  .btn.green{background:linear-gradient(180deg,#5cd992,var(--green)); box-shadow:0 8px 20px rgba(55,194,111,.35);}
+
+  /* ===== 학년 선택 ===== */
+  .grades{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  .grades button{
+    background:var(--panel2); color:var(--ink); border:2px solid var(--line);
+    border-radius:20px; padding:18px 8px 16px; cursor:pointer; font-family:inherit;
+    font-size:1.08rem; font-weight:700; transition:.18s;
+  }
+  .grades button .emo{display:block; font-size:2rem; margin-bottom:4px;}
+  .grades button:hover{transform:translateY(-3px); box-shadow:0 10px 20px rgba(120,120,180,.16);}
+  .grades button:active{transform:translateY(0);}
+  .grades button span.sub{display:block; font-size:.78rem; color:var(--dim); font-weight:400; margin-top:5px;}
+  .grades button.pick-e:hover{border-color:var(--red);}
+  .grades button.pick-m:hover{border-color:var(--green);}
+  .grades button.pick-h:hover{border-color:var(--purple);}
+
+  /* ===== 문제 ===== */
+  .prob{
+    background:linear-gradient(180deg,#fffaf3,#fff3e6); border:2px solid var(--line); border-radius:20px;
+    padding:18px 20px; margin:16px 0; font-size:1.08rem;
+  }
+  .prob .story{color:#a06a2c; font-size:.92rem; margin-bottom:12px; background:#fff4dd; border-left:4px solid var(--orange); padding:8px 12px; border-radius:8px;}
+  .prob .q{font-weight:400; color:var(--ink);}
+  .formula{font-family:'Gaegu','Cascadia Code',ui-monospace,monospace; background:#fff; padding:2px 9px; border-radius:8px; color:var(--sun2); font-weight:700; border:1.5px solid #ffe0bf;}
+
+  .answer{display:flex; gap:10px; margin-top:16px; align-items:center;}
+  .answer input{
+    flex:1; background:#fff; border:2px solid var(--line); border-radius:16px;
+    color:var(--ink); font-family:'Jua',inherit; font-size:1.5rem; text-align:center; padding:14px; font-weight:700;
+    letter-spacing:.08em;
+  }
+  .answer input:focus{outline:none; border-color:var(--orange); box-shadow:0 0 0 4px rgba(255,159,28,.18);}
+
+  .feedback{margin-top:14px; font-size:1rem; min-height:1.4em; font-weight:700;}
+  .feedback.ok{color:var(--ok);}
+  .feedback.bad{color:var(--bad);}
+
+  /* ===== 코드 공개 박스 ===== */
+  .codebox{
+    text-align:center; padding:24px; border-radius:22px; margin-top:16px;
+    background:linear-gradient(180deg,#eafff4,#d5fbe7);
+    border:2px solid #8fe6bb; box-shadow:0 10px 24px rgba(55,194,111,.18);
+  }
+  .codebox .lbl{font-size:.88rem; color:#3a8a63; margin-bottom:8px;}
+  .codebox .val{font-size:2.8rem; font-weight:700; color:var(--ok); font-family:'Jua',ui-monospace,monospace; letter-spacing:.04em;}
+  .codebox .hint{font-size:.9rem; color:#4b9c74; margin-top:10px;}
+
+  /* ===== 표 ===== */
+  .ztable{width:100%; border-collapse:separate; border-spacing:0; margin:14px 0; font-size:.98rem; overflow:hidden; border-radius:16px; border:2px solid var(--line);}
+  .ztable th,.ztable td{border-bottom:1.5px solid #ffe9db; padding:12px 14px; text-align:left;}
+  .ztable tr:last-child td{border-bottom:none;}
+  .ztable th{background:linear-gradient(180deg,#fff6ec,#ffeede); color:#a5793f; font-weight:700; font-size:.86rem;}
+  .ztable td{background:#fff;}
+  .ztable tr.hit td{background:linear-gradient(90deg,#fff2d4,#ffe6b8); color:var(--sun2); font-weight:700;}
+
+  .dest{
+    background:linear-gradient(180deg,#eef6ff,#dcecff); border:2px solid #b5d8fb; border-radius:18px;
+    padding:16px 18px; margin:14px 0; font-size:1.12rem;
+  }
+  .dest b{color:var(--blue);}
+
+  .hidden{display:none;}
+  .muted{color:var(--dim); font-size:.9rem;}
+  .divider{height:2px; background:repeating-linear-gradient(90deg,#ffe0cf 0 10px,transparent 10px 18px); border:none; margin:20px 0;}
+  a.reset{color:var(--dim); font-size:.9rem; text-decoration:none; border-bottom:2px dashed var(--line); padding-bottom:2px;}
+  .foot{text-align:center; margin-top:26px;}
+  .footbrand{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px; opacity:.9;}
+  .footbrand svg{height:26px; width:auto;}
+
+  @media (prefers-reduced-motion:reduce){ .sun{animation:none;} }
+  @media (prefers-reduced-motion:no-preference){
+    .card{animation:rise .35s ease;}
+    @keyframes rise{from{opacity:0; transform:translateY(10px) scale(.99);} to{opacity:1; transform:none;}}
+  }
+  @media (max-width:480px){
+    .top h1{font-size:1.28rem;}
+    .card h2{font-size:1.24rem;}
+    .brandbar svg{height:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== 경남수학문화관 로고 (앱에 직접 내장된 인라인 SVG) ===== -->
+  <div class="brandbar" role="img" aria-label="경남수학문화관 GNMC">
+    <svg viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg">
+      <!-- 색색깔 도형 마크 -->
+      <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+        <polygon points="26,8 6,50 46,50" stroke="#ef5b52" stroke-width="4.5"/>
+        <polygon points="30,20 42,32 30,44 18,32" fill="#ff9f1c" stroke="none"/>
+        <circle cx="52" cy="24" r="9" stroke="#37c26f" stroke-width="4"/>
+        <circle cx="64" cy="42" r="8" stroke="#4aa3f0" stroke-width="4"/>
+        <path d="M83 26 a11 11 0 1 0 0 15" stroke="#a65bd4" stroke-width="4.5"/>
+      </g>
+      <!-- 텍스트 -->
+      <text x="100" y="30" font-family="'Jua',sans-serif" font-size="21" font-weight="700" fill="#2f2b45">GNMC</text>
+      <text x="100" y="52" font-family="'Jua',sans-serif" font-size="20" font-weight="700" fill="#2f2b45">경남수학문화관</text>
+    </svg>
+  </div>
+
+  <div class="top">
+    <div class="sun" aria-hidden="true"></div>
+    <div>
+      <h1>🚚 스스로 달리는 배송차</h1>
+      <p>☀️ 태양풍 신호 교란 · 주행 코드 복구 관제소</p>
+    </div>
+  </div>
+
+  <div class="alert">
+    <span class="ic" aria-hidden="true">🌞</span>
+    <div>
+      <b>긴급 미션!</b> 태양 폭발(X급)로 GPS·통신이 교란됐어요. GPS만 믿던 배송차들은 전부 멈춰버렸죠. 😵
+      하지만 <b>우리 배송차는 GPS를 안 써요!</b> 라이다로 주변을 보고 👀, 빛으로 터널을 알아채며 💡 스스로 달려요.
+      교란으로 지워진 <b>주행 코드만 복구</b>하면 이 차는 다시 씩씩하게 임무를 완수한답니다! 💪
+    </div>
+  </div>
+
+  <div class="steps">
+    <div id="s0" class="on"><span class="n">💡</span>0 · 빛 조정</div>
+    <div id="s1"><span class="n">🔧</span>1 · 코드 복구</div>
+    <div id="s2"><span class="n">📦</span>2 · 배송지</div>
+    <div id="s3"><span class="n">🚀</span>3 · 출발</div>
+  </div>
+
+  <!-- STEP 0: 조도 안내 -->
+  <section id="step0" class="card">
+    <div class="eyebrow">🔦 준비 · 차의 눈 맞추기</div>
+    <h2>먼저 터널을 알아보게 하자 🚇</h2>
+    <p class="lead">GPS는 터널에서 안 터져요. 이 차는 <b>빛(조도)</b>으로 터널을 알아채요. 그 기준을 우리가 직접 정해 줄까요? ✨</p>
+
+    <table class="ztable" aria-label="조도 측정 안내">
+      <tr><th>📍 측정 위치</th><th>💡 조도 값</th></tr>
+      <tr><td>☀️ 터널 <b>밖</b> (밝을 때)</td><td>__________</td></tr>
+      <tr><td>🌑 터널 <b>안</b> (어두울 때)</td><td>__________</td></tr>
+      <tr><td>🎯 둘 <b>사이</b>의 값 → 기준</td><td>__________</td></tr>
+    </table>
+    <p class="muted">차를 터널 밖과 안에 각각 두고 조도 값을 읽어요. 두 값의 <b>사이</b> 값을 오케스트라의
+      <span class="formula">조도임계값</span>에 입력해요. (예: 밖 620 / 안 90 → 사이값 300)</p>
+
+    <div class="divider"></div>
+    <button class="btn" onclick="go(1)">💡 빛 기준을 입력했어요 →</button>
+  </section>
+
+  <!-- STEP 1: 학년 선택 + 암호 -->
+  <section id="step1" class="card hidden">
+    <div class="eyebrow">🔧 1단계 · 손상된 주행 코드 복구</div>
+    <h2>계산으로 주행 코드를 되살려라! 🧮</h2>
+    <p class="lead">태양풍에 주행 계산이 지워졌어요. 아래 계산을 풀어 <b>복구 코드</b>를 구하면 차가 출발해요! 🚀</p>
+
+    <p class="muted" style="margin-bottom:10px;">🎓 학년을 골라 주세요.</p>
+    <div class="grades">
+      <button class="pick-e" onclick="pickGrade('e')"><span class="emo">📐</span>초 4학년<span class="sub">각도</span></button>
+      <button class="pick-m" onclick="pickGrade('m')"><span class="emo">✖️</span>중 1학년<span class="sub">일차방정식</span></button>
+      <button class="pick-h" onclick="pickGrade('h')"><span class="emo">📊</span>고 1학년<span class="sub">이차방정식</span></button>
+    </div>
+
+    <div id="probWrap" class="hidden">
+      <div class="prob">
+        <div class="story" id="probStory"></div>
+        <div class="q" id="probQ"></div>
+      </div>
+      <div class="answer">
+        <input id="ansInput" type="number" inputmode="numeric" placeholder="?" aria-label="복구 코드 입력">
+        <button class="btn small green" onclick="checkAns()">✅ 확인</button>
+      </div>
+      <div class="feedback" id="fb"></div>
+
+      <div id="codeReveal" class="codebox hidden">
+        <div class="lbl">🔓 복구 코드 — 오케스트라 <span class="formula">암호</span> 칸에 입력</div>
+        <div class="val" id="codeVal">--</div>
+        <div class="hint">이 숫자를 오케스트라에 넣으면 차가 출발해요! 🎉</div>
+      </div>
+      <div id="nextWrap" class="hidden" style="margin-top:16px;">
+        <button class="btn blue" onclick="go(2)">📦 배송지 확인하러 가기 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: 배송지 -->
+  <section id="step2" class="card hidden">
+    <div class="eyebrow">📦 2단계 · 배송지 확인</div>
+    <h2>이번 배송의 목적지는? 🗺️</h2>
+    <p class="lead">태양풍으로 배송지 정보가 코드로만 남았어요. 표에서 <b>목적지 문자</b>를 찾아봐요! 🔍</p>
+
+    <div class="dest" id="destBox">🚚 오늘 이 차의 배송지: <b id="destName">--</b></div>
+
+    <table class="ztable" id="zoneTable" aria-label="배송 구역 코드표">
+      <tr><th>🏠 배송 구역</th><th>🔤 코드 문자</th></tr>
+    </table>
+
+    <div id="letterReveal" class="codebox hidden">
+      <div class="lbl">📮 배송지 문자 — 오케스트라 <span class="formula">표시하기</span>에 입력</div>
+      <div class="val" id="letterVal">--</div>
+      <div class="hint">도착하면 이 문자가 화면에 떠서 배송 완료를 알려줘요! 🎊</div>
+    </div>
+
+    <div class="divider"></div>
+    <button class="btn" onclick="go(3)">🔤 문자를 입력했어요 →</button>
+  </section>
+
+  <!-- STEP 3: 출발 -->
+  <section id="step3" class="card hidden">
+    <div class="eyebrow">🚀 3단계 · 출발</div>
+    <h2>이제 차를 깨우자! 🌟</h2>
+    <p class="lead">오케스트라에 값을 모두 넣었는지 확인하고 차를 신나게 출발시켜요! 🏁</p>
+
+    <table class="ztable">
+      <tr><th>📥 넣을 값</th><th>📌 어디에</th></tr>
+      <tr><td>💡 빛 기준 (조도 사이값)</td><td><span class="formula">조도임계값</span></td></tr>
+      <tr><td>🔓 복구 코드 <b id="sumCode" style="color:var(--ok)">--</b></td><td><span class="formula">암호</span></td></tr>
+      <tr><td>🔤 배송지 문자 <b id="sumLetter" style="color:var(--blue)">--</b></td><td><span class="formula">표시하기</span></td></tr>
+    </table>
+
+    <p class="muted">오케스트라에서 <b>초록 깃발 🏳️ ▶</b>을 누르고, 화면(스프라이트)을 눌러 복구 코드를 확인하면 차가 출발해요.
+      직선에서는 빠르게 🏎️, 곡선에서는 스스로 속도를 줄이며 🐢 터널을 지나 배송지까지 달려요!</p>
+
+    <div class="codebox" style="background:linear-gradient(180deg,#eef6ff,#d8ebff); border-color:#a9d3fb; box-shadow:0 10px 24px rgba(74,163,240,.2);">
+      <div class="val" style="color:var(--blue); font-size:1.7rem;">🚚💨 배송 시작!</div>
+      <div class="hint" style="color:#3f82c4;">GPS 없이, 스스로 보고 계산해서 달려요! 🌈</div>
+    </div>
+
+    <div class="foot">
+      <a class="reset" href="#" onclick="location.reload();return false;">🔄 처음부터 다시 (다음 학생)</a>
+    </div>
+  </section>
+
+  <div class="foot">
+    <div class="footbrand" role="img" aria-label="경남수학문화관">
+      <svg viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+          <polygon points="26,8 6,50 46,50" stroke="#ef5b52" stroke-width="4.5"/>
+          <polygon points="30,20 42,32 30,44 18,32" fill="#ff9f1c" stroke="none"/>
+          <circle cx="52" cy="24" r="9" stroke="#37c26f" stroke-width="4"/>
+          <circle cx="64" cy="42" r="8" stroke="#4aa3f0" stroke-width="4"/>
+          <path d="M83 26 a11 11 0 1 0 0 15" stroke="#a65bd4" stroke-width="4.5"/>
+        </g>
+      </svg>
+      <span class="muted">경남수학문화관 · 가족과 함께하는 SW체험교실 🧑‍🔬👨‍👩‍👧</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- 문제 은행 (답은 오케스트라 검증값과 반드시 일치: e=35, m=48, h=26) ----
+  const PROBLEMS = {
+    e: {
+      label:"초 4학년",
+      story:"🚗 배송차가 곧게 달리다가 커브에서 방향을 두 번 튼다.",
+      q:'첫 번째 커브에서 왼쪽으로 <span class="formula">20°</span>, 두 번째 커브에서 왼쪽으로 <span class="formula">15°</span> 더 꺾었다. 처음 방향에서 모두 몇 도(°) 돌았을까?',
+      answer:35
+    },
+    m: {
+      label:"중 1학년",
+      story:"🔢 주행 코드를 x라 하면, 안전 조향 규칙이 아래 식으로 남아 있다.",
+      q:'<span class="formula">2x − 12 = 84</span> 를 만족하는 x를 구하라. (이 x가 복구 코드)',
+      answer:48
+    },
+    h: {
+      label:"고 1학년",
+      story:"📈 곡선 주행 궤적의 봉인식이 아래 이차방정식으로 남아 있다.",
+      q:'<span class="formula">x² − 50x + 624 = 0</span> 의 두 근 중 <b>더 큰 값</b>이 복구 코드다.',
+      answer:26
+    }
+  };
+
+  // ---- 배송 구역 코드표 (랜덤 배정) ----
+  const ZONES = [
+    {name:"🏭 북부 물류창고", code:"N"},
+    {name:"📮 동부 집하장",   code:"E"},
+    {name:"🏢 중앙 배송센터", code:"D"},
+    {name:"🚉 서부 터미널",   code:"W"},
+    {name:"📦 남부 보관소",   code:"S"}
+  ];
+
+  let curGrade=null, solved=false, destZone=null;
+
+  function go(n){
+    for(let i=0;i<=3;i++){
+      document.getElementById('step'+i).classList.toggle('hidden', i!==n);
+      const chip=document.getElementById('s'+i);
+      chip.classList.toggle('on', i===n);
+      chip.classList.toggle('done', i<n);
+    }
+    if(n===2 && !destZone) setupDest();
+    if(n===3) refreshSummary();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function pickGrade(g){
+    curGrade=g; solved=false;
+    const p=PROBLEMS[g];
+    document.getElementById('probStory').textContent=p.story;
+    document.getElementById('probQ').innerHTML=p.q;
+    document.getElementById('probWrap').classList.remove('hidden');
+    document.getElementById('codeReveal').classList.add('hidden');
+    document.getElementById('nextWrap').classList.add('hidden');
+    document.getElementById('fb').textContent='';
+    document.getElementById('fb').className='feedback';
+    document.getElementById('ansInput').value='';
+    document.querySelectorAll('.grades button').forEach(b=>b.style.opacity=.5);
+    event.target.closest('button').style.opacity=1;
+    document.getElementById('ansInput').focus();
+  }
+
+  function checkAns(){
+    if(!curGrade) return;
+    const p=PROBLEMS[curGrade];
+    const v=parseInt(document.getElementById('ansInput').value,10);
+    const fb=document.getElementById('fb');
+    if(isNaN(v)){ fb.textContent='🙋 숫자를 입력해 주세요.'; fb.className='feedback bad'; return; }
+    if(v===p.answer){
+      solved=true;
+      fb.textContent='🎉 복구 성공! 주행 코드를 되살렸어요!';
+      fb.className='feedback ok';
+      document.getElementById('codeVal').textContent=p.answer;
+      document.getElementById('codeReveal').classList.remove('hidden');
+      document.getElementById('nextWrap').classList.remove('hidden');
+    }else{
+      fb.textContent='💦 복구 실패 — 계산을 다시 확인해 볼까요?';
+      fb.className='feedback bad';
+      document.getElementById('codeReveal').classList.add('hidden');
+      document.getElementById('nextWrap').classList.add('hidden');
+    }
+  }
+
+  function setupDest(){
+    destZone=ZONES[Math.floor(Math.random()*ZONES.length)];
+    document.getElementById('destName').textContent=destZone.name;
+    const t=document.getElementById('zoneTable');
+    t.querySelectorAll('tr.zrow').forEach(r=>r.remove());
+    ZONES.forEach(z=>{
+      const tr=document.createElement('tr');
+      tr.className='zrow'+(z.code===destZone.code?' hit':'');
+      tr.innerHTML=`<td>${z.name}</td><td>${z.code}</td>`;
+      t.appendChild(tr);
+    });
+    // 문자는 채점 대상 아님 — 조회 후 바로 공개
+    document.getElementById('letterVal').textContent=destZone.code;
+    document.getElementById('letterReveal').classList.remove('hidden');
+  }
+
+  function refreshSummary(){
+    document.getElementById('sumCode').textContent = curGrade?PROBLEMS[curGrade].answer:'--';
+    document.getElementById('sumLetter').textContent = destZone?destZone.code:'--';
+  }
+
+  document.getElementById('ansInput').addEventListener('keydown',e=>{ if(e.key==='Enter') checkAns(); });
+</script>
+</body>
+</html>
