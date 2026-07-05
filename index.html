@@ -29,9 +29,9 @@
       radial-gradient(900px 700px at 50% 115%, rgba(166,91,212,.20), transparent 60%),
       linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
     background-attachment:fixed;
-    color:var(--ink); min-height:100vh; line-height:1.65; word-break:keep-all;
+    color:var(--ink); min-height:100vh; line-height:1.65; word-break:keep-all; overflow-x:hidden;
   }
-  .wrap{max-width:840px; margin:0 auto; padding:18px 16px 70px;}
+  .wrap{max-width:840px; margin:0 auto; padding:18px 16px 70px; overflow-x:hidden;}
 
   /* ===== 헤더 · 수학문화관 로고 ===== */
   .brandbar{
@@ -135,7 +135,7 @@
 
   .answer{display:flex; gap:10px; margin-top:16px; align-items:center;}
   .answer input{
-    flex:1; background:#fff; border:2px solid var(--line); border-radius:16px;
+    flex:1 1 0; min-width:0; width:100%; background:#fff; border:2px solid var(--line); border-radius:16px;
     color:var(--ink); font-family:'Jua',inherit; font-size:1.5rem; text-align:center; padding:14px; font-weight:700;
     letter-spacing:.08em;
   }
